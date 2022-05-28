@@ -12,7 +12,7 @@ const supportEntity = createTablePage<Product>({
   schema: {
     properties: {
       title: {
-        type: "label",
+        type: "text",
         label: "Заголовок",
       },
       id: {
@@ -20,13 +20,18 @@ const supportEntity = createTablePage<Product>({
         label: "Номер",
         renderCell: (value) => <a href={`/tickets/${value}`}>{value}</a>,
       },
+      price: {
+        type: "text",
+        label: "Цена",
+        centered: true,
+      },
     },
-    extraOptions: {
-      edit: {
+    extraOptions: [
+      {
         type: "edit",
         onClick: (value) => {},
       },
-      some: {
+      {
         type: "custom",
         Component: (value) => (
           <div
@@ -38,13 +43,14 @@ const supportEntity = createTablePage<Product>({
           </div>
         ),
       },
-    },
+    ],
   },
   toolbar: [
     {
       type: "label",
       label: "Добавить",
       onClick: () => {},
+      tooltip: "Добавить новый тикет",
     },
     {
       type: "custom",

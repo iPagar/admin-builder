@@ -28,10 +28,9 @@ export type ExampleControllerGetAllProductsApiArg = {
   skip: number;
 };
 export type Product = {
-  userId: number;
   id: number;
   title: string;
-  body: string;
+  price: number;
 };
 export const { useExampleControllerGetAllProductsQuery, endpoints } =
   injectedRtkApi;

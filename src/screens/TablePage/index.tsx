@@ -8,6 +8,7 @@ import {
   TableBody,
   CircularProgress,
   Button,
+  Tooltip,
 } from "@mui/material";
 import { useParams } from "react-router-dom";
 import { Pagination } from "../../features/Pagination";
@@ -55,7 +56,10 @@ const TablePage = <T,>({
       setIsLoading(true);
       getList({
         limit: provider.options.perPage,
-        skip: provider.options.perPage * currentPage,
+        skip:
+          currentPage === 1
+            ? 0
+            : provider.options.perPage * currentPage - provider.options.perPage,
       })
         .then(setList)
         .then(() => setIsLoading(false))
@@ -85,25 +89,37 @@ const TablePage = <T,>({
           }}
         >
           {toolbar?.map((button, i) => {
-            switch (button.type) {
-              case "label":
-                return (
-                  <Button
-                    key={i}
-                    variant="contained"
-                    onClick={button.onClick}
-                    sx={{
-                      mr: 2,
-                    }}
-                  >
-                    {label}
-                  </Button>
-                );
-              case "custom":
-                return <Fragment key={i}>{button.render()}</Fragment>;
-              default:
-                throw new Error("Unknown button type");
-            }
+            const tooltip = button.tooltip;
+
+            const renderToolbarButton = () => {
+              switch (button.type) {
+                case "label":
+                  return (
+                    <Button
+                      key={i}
+                      variant="contained"
+                      onClick={button.onClick}
+                      sx={{
+                        mr: 2,
+                      }}
+                    >
+                      {label}
+                    </Button>
+                  );
+                case "custom":
+                  return <Fragment key={i}>{button.render()}</Fragment>;
+                default:
+                  throw new Error("Unknown button type");
+              }
+            };
+
+            return tooltip ? (
+              <Tooltip key={i} title={tooltip}>
+                {renderToolbarButton()}
+              </Tooltip>
+            ) : (
+              renderToolbarButton()
+            );
           })}
         </Box>
       </Box>
@@ -125,7 +141,7 @@ const TablePage = <T,>({
                 const { type } = property;
 
                 switch (type) {
-                  case "label":
+                  case "text":
                     return (
                       <TableCell key={key}>
                         <strong>{property.label}</strong>
@@ -157,15 +173,21 @@ const TablePage = <T,>({
                       const cell = schema.properties[key as keyof T];
 
                       switch (cell?.type) {
-                        case "label":
+                        case "text":
                           return (
                             <TableCell
                               key={key}
                               sx={{
                                 width: "100%",
+                                textAlign: cell.centered ? "center" : "left",
                               }}
+                              onClick={() => cell.onClick && cell.onClick(row)}
                             >
-                              {value as unknown as ReactNode}
+                              {cell.onClick ? (
+                                <button>{value as unknown as ReactNode}</button>
+                              ) : (
+                                (value as unknown as ReactNode)
+                              )}
                             </TableCell>
                           );
                         case "custom":
@@ -176,54 +198,58 @@ const TablePage = <T,>({
                                 width: "100%",
                               }}
                             >
-                              {cell.renderCell(value)}
+                              {cell.renderCell(value, row)}
                             </TableCell>
                           );
                         default:
                           throw new Error("Unknown cell type");
                       }
                     })}
-                    {schema.extraOptions &&
-                      Object.keys(schema.extraOptions).map((key) => {
-                        if (schema.extraOptions && key in schema.extraOptions) {
-                          const extraOption = schema.extraOptions[key];
+                    {schema.extraOptions?.map((extraOption, i) => {
+                      switch (extraOption.type) {
+                        case "label":
+                          return (
+                            <TableCell
+                              key={i}
+                              onClick={() => extraOption.onClick(row)}
+                            >
+                              {extraOption.label}
+                            </TableCell>
+                          );
+                        case "edit":
+                          return (
+                            <TableCell
+                              key={i}
+                              onClick={() => extraOption.onClick(row)}
+                            >
+                              <EditIcon />
+                            </TableCell>
+                          );
+                        case "delete":
+                          return (
+                            <TableCell
+                              key={i}
+                              onClick={() => extraOption.onClick(row)}
+                            >
+                              <DeleteIcon
+                                sx={{
+                                  fill: "red",
+                                }}
+                              />
+                            </TableCell>
+                          );
+                        case "custom":
+                          return (
+                            <TableCell key={i}>
+                              {extraOption.Component(row)}
+                            </TableCell>
+                          );
 
-                          switch (extraOption.type) {
-                            case "edit":
-                              return (
-                                <TableCell
-                                  key={key}
-                                  onClick={() => extraOption.onClick(row)}
-                                >
-                                  <EditIcon />
-                                </TableCell>
-                              );
-                            case "remove":
-                              return (
-                                <TableCell
-                                  key={key}
-                                  onClick={() => extraOption.onClick(row)}
-                                >
-                                  <DeleteIcon
-                                    sx={{
-                                      fill: "red",
-                                    }}
-                                  />
-                                </TableCell>
-                              );
-                            case "custom":
-                              return (
-                                <TableCell key={key}>
-                                  {extraOption.Component(row)}
-                                </TableCell>
-                              );
-
-                            default: {
-                              throw new Error("Invalid extra option key");
-                            }
-                          }
+                        default: {
+                          throw new Error("Invalid extra option key");
                         }
-                      })}
+                      }
+                    })}
                   </TableRow>
                 ))}
             </>
@@ -247,7 +273,7 @@ const TablePage = <T,>({
         list?.data.result?.length ? (
           <Pagination
             currentPage={currentPage}
-            totalPages={list.total / provider.options.perPage - 1}
+            totalPages={list.total / provider.options.perPage}
             tag={tag}
           />
         ) : null}

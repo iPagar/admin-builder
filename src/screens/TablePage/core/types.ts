@@ -30,51 +30,106 @@ export type DataProvider<T> = {
 
 export type Schema<T, K extends keyof T> = DataTableType<T, K>;
 
-export type DataCellTypeCommon = {
+export interface DataCellTypeCommon {
+  /**
+   * The label of the column.
+   */
   label: string;
-};
+}
 
-export type DataCellTypeWithRender<T> = DataCellTypeCommon & {
+export interface DataCellTypeWithRender<T, K> extends DataCellTypeCommon {
+  /**
+   * A cell with custom renderer.
+   */
   type: "custom";
-  renderCell: (value: T) => React.ReactNode;
-};
+  renderCell: (value: K, data: T) => React.ReactNode;
+}
 
-export type DataCellTypeWithLabel = DataCellTypeCommon & {
-  type: "label";
-};
+export interface DataCellWithText<T> extends DataCellTypeCommon {
+  /**
+   * A cell with a text.
+   */
+  type: "text";
+  onClick?: (value: T) => void;
+  /**
+   * If true, the cell will be aligned to the center.
+   * Else it will be aligned to the left.
+   */
+  centered?: boolean;
+}
 
+export type Property<T, K> = DataCellWithText<T> | DataCellTypeWithRender<T, K>;
+
+/**
+ * This type is used to describe a data cell.
+ * @template T The type of the data.
+ * @template K The key of the data.
+ *
+ */
 export type DataTableType<T, K extends keyof T> = {
+  /**
+   * The keys of the data.
+   */
   properties: Partial<{
-    [P in K]: DataCellTypeWithLabel | DataCellTypeWithRender<T[P]>;
+    [P in K]: Property<T, T[P]>;
   }>;
-  extraOptions?: {
-    [n: string]:
-      | ExtraOptionType<T>
-      | ExtraOptionTypeEdit<T>
-      | ExtraOptionTypeRemove<T>;
-  };
+  /**
+   * This property is used to add additional cells.
+   * @template T The type of the data.
+   * @example
+   * ```
+   *  [{
+        type: "edit",
+        onClick: (value) => {
+          openModal(value);
+        },
+      }]
+    * ```
+   */
+  extraOptions?: Array<ExtraOption<T>>;
 };
 
-export type ExtraOptionType<T> = {
+/**
+ * This type is used to describe a custom extra option.
+ */
+export type ExtraOption<T> =
+  | ExtraOptionTypeCustom<T>
+  | ExtraOptionTypeWithLabel<T>
+  | ExtraOptionTypeWithIcons<T>;
+
+export type ExtraOptionTypeCustom<T> = {
   type: "custom";
   Component: (value: T) => React.ReactNode;
 };
 
-export type ExtraOptionTypeEdit<T> = {
-  type: "edit";
+/**
+ * This type is used to describe a label extra option.
+ */
+export type ExtraOptionTypeWithLabel<T> = {
+  type: "label";
+  onClick: (value: T) => void;
+  label: string;
+};
+
+/**
+ * This type is used to describe an icon extra option.
+ */
+export type ExtraOptionTypeWithIcons<T> = {
+  type: "edit" | "delete";
   onClick: (value: T) => void;
 };
 
-export type ExtraOptionTypeRemove<T> = {
-  type: "remove";
-  onClick: (value: T) => void;
-};
-
+/**
+ * This type is used to describe a toolbar buttons.
+ */
 export type ToolbarType = Array<
   ToolbarButtonWithLabelType | ToolbarButtonTypeWithCustomRender
 >;
 
 export type ToolbarTypeCommon = {
+  /**
+   * The tooltip for the button.
+   */
   tooltip?: string;
 };
 
