@@ -4,11 +4,14 @@ import {
   Table,
   TableHead,
   TableRow,
-  TableCell,
+  TableCell as DefaultTableCell,
   TableBody,
   CircularProgress,
   Button,
   Tooltip,
+  Skeleton,
+  TableCellProps,
+  IconButton,
 } from "@mui/material";
 import { useParams } from "react-router-dom";
 import { Pagination } from "../../features/Pagination";
@@ -23,6 +26,20 @@ import {
   Schema,
   ToolbarType,
 } from "./core/types";
+
+const TableCell = (props: TableCellProps) => {
+  return (
+    <DefaultTableCell
+      {...props}
+      sx={{
+        ...props.sx,
+        lineHeight: "2.5rem",
+      }}
+    >
+      {props.children}
+    </DefaultTableCell>
+  );
+};
 
 export type TablePageProps<T> = {
   options: {
@@ -165,97 +182,156 @@ const TablePage = <T,>({
           </TableHead>
           <TableBody>
             <>
-              {isLoading ||
-                list?.data.result?.map((row, i) => (
-                  <TableRow key={i}>
-                    {Object.keys(schema.properties).map((key) => {
-                      const value = row[key as keyof T];
-                      const cell = schema.properties[key as keyof T];
+              {isLoading
+                ? "perPage" in provider.options &&
+                  provider.options.perPage &&
+                  new Array(provider.options.perPage).fill(null).map((_, i) => (
+                    <TableRow key={i}>
+                      {Object.keys(schema.properties).map((_, i) => {
+                        return (
+                          <TableCell
+                            key={i}
+                            sx={{
+                              width: "100%",
+                              minWidth: 50,
+                            }}
+                          >
+                            <Skeleton variant="text" />
+                          </TableCell>
+                        );
+                      })}
+                      {schema.extraOptions?.map((_, i) => {
+                        return (
+                          <TableCell
+                            key={i}
+                            sx={{
+                              width: "100%",
+                              minWidth: 50,
+                            }}
+                          >
+                            <Skeleton variant="text" />
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))
+                : list?.data.result?.map((row, i) => (
+                    <TableRow key={i}>
+                      {Object.keys(schema.properties).map((key) => {
+                        const value = row[key as keyof T];
+                        const cell = schema.properties[key as keyof T];
 
-                      switch (cell?.type) {
-                        case "text":
-                          return (
-                            <TableCell
-                              key={key}
-                              sx={{
-                                width: "100%",
-                                textAlign: cell.centered ? "center" : "left",
-                              }}
-                              onClick={() => cell.onClick && cell.onClick(row)}
-                            >
-                              {cell.onClick ? (
-                                <button>{value as unknown as ReactNode}</button>
-                              ) : (
-                                (value as unknown as ReactNode)
-                              )}
-                            </TableCell>
-                          );
-                        case "custom":
-                          return (
-                            <TableCell
-                              key={key}
-                              sx={{
-                                width: "100%",
-                              }}
-                            >
-                              {cell.renderCell(value, row)}
-                            </TableCell>
-                          );
-                        default:
-                          throw new Error("Unknown cell type");
-                      }
-                    })}
-                    {schema.extraOptions?.map((extraOption, i) => {
-                      switch (extraOption.type) {
-                        case "label":
-                          return (
-                            <TableCell
-                              key={i}
-                              onClick={() => extraOption.onClick(row)}
-                            >
-                              {extraOption.label}
-                            </TableCell>
-                          );
-                        case "edit":
-                          return (
-                            <TableCell
-                              key={i}
-                              onClick={() => extraOption.onClick(row)}
-                            >
-                              <EditIcon />
-                            </TableCell>
-                          );
-                        case "delete":
-                          return (
-                            <TableCell
-                              key={i}
-                              onClick={() => extraOption.onClick(row)}
-                            >
-                              <DeleteIcon
+                        switch (cell?.type) {
+                          case "text":
+                            return (
+                              <TableCell
+                                key={key}
                                 sx={{
-                                  fill: "red",
+                                  width: "100%",
+                                  textAlign: cell.centered ? "center" : "left",
                                 }}
-                              />
-                            </TableCell>
-                          );
-                        case "custom":
-                          return (
-                            <TableCell key={i}>
-                              {extraOption.Component(row)}
-                            </TableCell>
-                          );
-
-                        default: {
-                          throw new Error("Invalid extra option key");
+                                onClick={() =>
+                                  cell.onClick && cell.onClick(row)
+                                }
+                              >
+                                {cell.onClick ? (
+                                  <button>
+                                    {value as unknown as ReactNode}
+                                  </button>
+                                ) : (
+                                  (value as unknown as ReactNode)
+                                )}
+                              </TableCell>
+                            );
+                          case "custom":
+                            return (
+                              <TableCell
+                                key={key}
+                                sx={{
+                                  width: "100%",
+                                }}
+                              >
+                                {cell.renderCell(value, row)}
+                              </TableCell>
+                            );
+                          default:
+                            throw new Error("Unknown cell type");
                         }
-                      }
-                    })}
-                  </TableRow>
-                ))}
+                      })}
+                      {schema.extraOptions?.map((extraOption, i) => {
+                        switch (extraOption.type) {
+                          case "label":
+                            return (
+                              <TableCell
+                                key={i}
+                                onClick={() => extraOption.onClick(row)}
+                              >
+                                {extraOption.label}
+                              </TableCell>
+                            );
+                          case "edit":
+                            return (
+                              <TableCell
+                                key={i}
+                                onClick={() => extraOption.onClick(row)}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <IconButton>
+                                    <EditIcon
+                                      sx={{
+                                        fontSize: "1.5rem",
+                                      }}
+                                    />
+                                  </IconButton>
+                                </div>
+                              </TableCell>
+                            );
+                          case "delete":
+                            return (
+                              <TableCell
+                                key={i}
+                                onClick={() => extraOption.onClick(row)}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <IconButton>
+                                    <DeleteIcon
+                                      sx={{
+                                        fill: "red",
+                                        fontSize: "1.5rem",
+                                      }}
+                                    />
+                                  </IconButton>
+                                </div>
+                              </TableCell>
+                            );
+                          case "custom":
+                            return (
+                              <TableCell key={i}>
+                                {extraOption.Component(row)}
+                              </TableCell>
+                            );
+
+                          default: {
+                            throw new Error("Invalid extra option key");
+                          }
+                        }
+                      })}
+                    </TableRow>
+                  ))}
             </>
           </TableBody>
         </Table>
-        {isLoading && (
+        {isLoading && !withPagination && (
           <CircularProgress
             sx={{
               mt: 2,
