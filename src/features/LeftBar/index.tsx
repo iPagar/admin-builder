@@ -47,7 +47,7 @@ const LeftBar = () => {
               key={label}
               disabled={disabled}
               onClick={() => {
-                navigate(tag + (withPagination ? "/1" : ""));
+                navigate("/" + tag + (withPagination ? "/1" : ""));
               }}
               selected={
                 matchPath(
